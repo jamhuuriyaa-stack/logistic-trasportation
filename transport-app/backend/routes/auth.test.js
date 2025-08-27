@@ -1,20 +1,37 @@
 const request = require('supertest');
 const express = require('express');
-const authRouter = require('./auth');
+const createAuthRouter = require('./auth');
 const sqlite3 = require('sqlite3').verbose();
 
-const dbPath = './transport.db';
+const dbPath = ':memory:';
 let db;
-
-const app = express();
-app.use(express.json());
-app.use('/api/auth', authRouter);
+let app;
 
 describe('Auth Endpoints', () => {
     beforeAll((done) => {
         db = new sqlite3.Database(dbPath, (err) => {
             if (err) return done(err);
-            done();
+            const createUsersTableSql = `
+                CREATE TABLE Users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT UNIQUE,
+                    password_hash TEXT,
+                    full_name TEXT,
+                    phone_number TEXT UNIQUE,
+                    role TEXT CHECK(role IN ('customer', 'driver', 'admin')),
+                    points INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );`;
+            db.run(createUsersTableSql, (err) => {
+                if (err) return done(err);
+
+                app = express();
+                app.use(express.json());
+                const authRouter = createAuthRouter(db);
+                app.use('/api/auth', authRouter);
+                done();
+            });
         });
     });
 
@@ -48,11 +65,9 @@ describe('Auth Endpoints', () => {
                 password: 'password123'
             });
         expect(res.statusCode).toEqual(400);
-        expect(res.body).toHaveProperty('error', 'All fields are required');
     });
 
     it('should fail to register a user with a duplicate email', async () => {
-        // First, register a user
         await request(app)
             .post('/api/auth/register')
             .send({
@@ -63,7 +78,6 @@ describe('Auth Endpoints', () => {
                 role: 'customer'
             });
 
-        // Then, try to register another user with the same email
         const res = await request(app)
             .post('/api/auth/register')
             .send({

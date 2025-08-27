@@ -12,6 +12,7 @@ Stores information about all users (customers, drivers, admins).
 - `full_name`: TEXT
 - `phone_number`: TEXT UNIQUE
 - `role`: TEXT CHECK(role IN ('customer', 'driver', 'admin'))
+- `points`: INTEGER DEFAULT 0
 - `created_at`: DATETIME DEFAULT CURRENT_TIMESTAMP
 - `updated_at`: DATETIME DEFAULT CURRENT_TIMESTAMP
 
@@ -43,7 +44,7 @@ A versatile table to handle all types of transportation requests.
 - `booked_at`: DATETIME DEFAULT CURRENT_TIMESTAMP
 - `start_time`: DATETIME
 - `end_time`: DATETIME
-- `details`: TEXT (JSON formatted string for specific details, e.g., `{"parcel_weight": 5, "parcel_description": "Books"}`)
+- `details`: TEXT (JSON formatted string for specific details)
 - `schedule_id`: INTEGER (Foreign Key to `Schedules.id`, for bus bookings)
 - `seat_number`: INTEGER (for bus bookings)
 - `created_at`: DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -54,14 +55,14 @@ A versatile table to handle all types of transportation requests.
 ### Routes Table
 Defines the bus routes.
 - `id`: INTEGER PRIMARY KEY AUTOINCREMENT
-- `name`: TEXT (e.g., "City A - City B Express")
+- `name`: TEXT
 - `created_at`: DATETIME DEFAULT CURRENT_TIMESTAMP
 - `updated_at`: DATETIME DEFAULT CURRENT_TIMESTAMP
 
 ### Stops Table
 Defines the bus stops.
 - `id`: INTEGER PRIMARY KEY AUTOINCREMENT
-- `name`: TEXT (e.g., "Downtown Bus Terminal")
+- `name`: TEXT
 - `latitude`: REAL
 - `longitude`: REAL
 - `created_at`: DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -72,16 +73,27 @@ A junction table to link stops to routes and define their order.
 - `id`: INTEGER PRIMARY KEY AUTOINCREMENT
 - `route_id`: INTEGER (Foreign Key to `Routes.id`)
 - `stop_id`: INTEGER (Foreign Key to `Stops.id`)
-- `stop_order`: INTEGER (The sequence of the stop in the route)
+- `stop_order`: INTEGER
 - `created_at`: DATETIME DEFAULT CURRENT_TIMESTAMP
 
 ### Schedules Table
 Defines the schedule for a bus on a specific route.
 - `id`: INTEGER PRIMARY KEY AUTOINCREMENT
 - `route_id`: INTEGER (Foreign Key to `Routes.id`)
-- `bus_id`: INTEGER (Foreign Key to `Vehicles.id` where `type` is 'bus')
+- `bus_id`: INTEGER (Foreign Key to `Vehicles.id`)
 - `departure_time`: DATETIME
 - `arrival_time`: DATETIME
 - `price_per_seat`: REAL
 - `created_at`: DATETIME DEFAULT CURRENT_TIMESTAMP
 - `updated_at`: DATETIME DEFAULT CURRENT_TIMESTAMP
+
+## User Loyalty System
+
+### PointTransactions Table
+Stores the history of points earned and spent by users.
+- `id`: INTEGER PRIMARY KEY AUTOINCREMENT
+- `user_id`: INTEGER (Foreign Key to `Users.id`)
+- `booking_id`: INTEGER (Foreign Key to `Bookings.id`)
+- `points_change`: INTEGER (Positive for earned, negative for spent)
+- `transaction_type`: TEXT CHECK(transaction_type IN ('earned', 'spent', 'correction'))
+- `created_at`: DATETIME DEFAULT CURRENT_TIMESTAMP
